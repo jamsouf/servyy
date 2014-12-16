@@ -5,7 +5,7 @@
         <title>Servyy</title>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <link href='http://jamsouf.github.io/servyy/assets/css/style.css' rel='stylesheet' type='text/css'>
+        <link href='https://jamsouf.github.io/servyy/assets/css/style.css' rel='stylesheet' type='text/css'>
     </head>
     <body>
         <div id="main">
