@@ -1,4 +1,4 @@
-servyy
+Servyy
 ======
 
-Single page server dashboard
+Branch for static content
