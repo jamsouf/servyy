@@ -1,30 +1,267 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:300,400,700,900);
+
 body {
-    margin: 40px 0;
-    background: repeat center center fixed url('https://jamsouf.github.io/servyy/assets/img/bg.jpg');
-    background-size: cover;
-    color: #F4F4F4;
-    font: normal 14px 'Lato';
+    background: url('https://jamsouf.github.io/servyy/assets/img/bg.gif');
+    color: #E8E8E8;
+    font: normal 13px/18px 'Lato';
 }
-div { position: relative; }
-.light { font-weight: 300; }
-.regular { font-weight: 400; }
-.bold { font-weight: 700; }
-.black { font-weight: 900; }
-.float { float: left; }
-.wp33 { width: 32.4%; }
-.wp50 { width: 49.3%; }
-.wp66 { width: 66.2%; }
-.clear { clear: both; }
+div {
+    position: relative;
+}
+.light {
+    font-weight: 300;
+}
+.regular {
+    font-weight: 400;
+}
+.bold {
+    font-weight: 700;
+}
+.black {
+    font-weight: 900;
+}
+.float {
+    float: left;
+}
+.clear {
+    clear: both;
+}
+.wp33 {
+    width: 32.4%;
+}
+.wp50 {
+    width: 49.3%;
+}
+.wp66 {
+    width: 66.2%;
+}
+.wp100 {
+    width: 100%;
+}
+.hf100 {
+    height: 100px;
+}
+.hf125 {
+    height: 125px;
+}
+.hf150 {
+    height: 150px;
+}
+.hf175 {
+    height: 175px;
+}
+.hf200 {
+    height: 200px;
+}
+.hf235 {
+    height: 235px;
+}
+.hf300 {
+    height: 300px;
+}
+#head {
+    z-index:1000;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 40px;
+    width: 100%;
+    background: rgba(0, 0, 0, .92);
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 12px;
+    color: #757575;
+}
+#head .logo {
+    position: absolute;
+    width: 100%;
+    top: 8px;
+    text-align: center;
+}
+#head .logo a {
+    color: #757575;
+    text-decoration: none;
+}
+#head .logo a:hover {
+    color: #FFF;
+}
+#head .left {
+    float: left;
+    padding: 8px 0 0 8px;
+    text-align: left;
+}
+#head .right {
+    float: right;
+    padding: 8px 8px 0 0;
+    text-align: right;
+}
 #main {
-    width: 70%;
-    margin: auto;
+    margin: 70px auto 30px;
+    width: 78%;
 }
-#content .nmright { margin-right: 0; }
+#content .nmright {
+    margin-right: 0;
+}
 .box {
     margin: 0 1.4% 1.4% 0;
-    background: rgba(0, 0, 0, .85);
+    background: rgba(0, 0, 0, .9);
+}
+.box .title {
+    padding: 4px 15px;
+    font-weight: 700;
+    font-size: 13px;
+    background-color: #000;
+    border-bottom: 1px dotted #444;
+}
+.box .wrap {
+    overflow: auto;
+    padding: 12px 0 15px 15px;
 }
 .box .inner {
+    padding-right: 10px;
+}
+#info-os .head-title {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 300;
+    font-size: 22px;
+}
+#info-os .sub-title {
+    display: block;
+    font-weight: 700;
+}
+#info-os .content {
+    margin-top: 33px;
+    font-size: 12px;
+    line-height: 18px;
+}
+#info-cpu .head-title {
+    display: block;
+    font-size: 14px;
+}
+#info-cpu .sub-title {
+    display: block;
+    font-size: 12px;
+}
+#info-cpu .load-avg {
+    font-size: 12px;
+    color: #4E4E4E;
+    word-spacing: 3px;
+}
+#info-cpu .up-since {
+    font-size: 12px;
+    color: #4E4E4E;
+}
+#cpu-load-average-chart {
+    width: 70%;
+    height: 90px;
+}
+#cpu-load-using-chart {
+    float: left;
+    margin-top: 5px;
+    width: 60%;
+    height: 140px;
+}
+#cpu-total-load {
+    float: left;
+    padding: 100px 0 0 10px;
+    text-align: center;
+}
+#cpu-total-load .ident {
+    font-size: 12px;
+    font-weight: 700;
+}
+#cpu-total-load .value {
+    font-size: 36px;
+    font-weight: 300;
+}
+#mem-usage {
+    text-align: center;
+    font-size: 12px;
+}
+#mem-usage-chart {
+    height:95px;
+}
+#swap-usage {
+    margin-top: 5px;
+    text-align: center;
+    font-size: 12px;
+}
+#swap-usage-chart {
+    height:95px;
+}
+#disk-usage-chart {
+    width: 95%;
+    height: 145px;
+}
+#tasks-total {
+    margin-right: 9%;
+}
+.tasks-total-box {
     padding: 15px;
+    text-align: center;
+}
+#tasks-total .ident {
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+#tasks-total .value, #tasks-total .value-top {
+    margin-top: 4px;
+    font-size: 22px;
+    font-weight: 300;
+}
+#tasks-total .value-top {
+    font-size: 44px;
+}
+#tasks-count {
+    margin-right: 9%;
+    text-align: center;
+    font-size: 12px;
+}
+#tasks-count-chart {
+    margin-top: 5px;
+    height: 120px;
+}
+#tasks-count .ident {
+    display: block;
+    margin-top: 10px;
+    font-weight: 700;
+}
+#tasks-resources {
+    margin-right: 0px;
+}
+#tasks-resources table {
+    margin: 8px auto 0;
+    font-size: 12px;
+}
+#tasks-resources th {
+    font-weight: 700;
+    background-color: #474730;
+}
+#tasks-resources th, #tasks-resources td  {
+    padding: 0 8px;
+    border-radius: 3px;
+    text-align: center;
+}
+#tasks-resources td {
+    background-color: #343432;
+}
+.box .package {
+    float: left;
+    margin: 0 10px 10px 0;
+    padding: 9px;
+    text-align: center;
+    background-color: #3D3D3D;
+    box-shadow: 1px 0px #525252, 0px 1px #636363,
+                2px 1px #525252, 1px 2px #636363,
+                3px 2px #525252, 2px 3px #636363;
+}
+.box .package .ident {
+    font-size: 16px;
+    font-weight: 300;
+}
+.box .package .value {
+    font-size: 11px;
+    font-weight: 700;
 }
