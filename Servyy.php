@@ -245,11 +245,11 @@ class Servyy
     public function getLoadAverage($type)
     {
         $avgValue = $this->extractStr($this->data['uptime'], "load average:", "\n");
-        $avgArr = explode(",", $avgValue);
+        $avgArr = explode(", ", $avgValue);
         $arr = array(
-             1 => trim($avgArr[0]),
-             5 => trim($avgArr[1]),
-            15 => trim($avgArr[2])
+             1 => trim($this->rcp($avgArr[0])),
+             5 => trim($this->rcp($avgArr[1])),
+            15 => trim($this->rcp($avgArr[2]))
         );
         
         return $arr[$type];
@@ -273,14 +273,15 @@ class Servyy
     public function getCpuLoad($type, $number = null)
     {
         $loadValue = $this->extractStr($this->data['top'], "Cpu\(s\):", "\n");
-        $loadArr = explode(",", $loadValue);
+        $loadArr = explode(", ", $loadValue);
         
         foreach ($loadArr as $str) {
             $tmp = explode(" ", trim($str));
+            $used = trim($this->rcp($tmp[0]));
             $arr[] = array(
                 'ident' => trim($tmp[1]),
-                'used' => trim($tmp[0]),
-                'nused' => 100 - trim($tmp[0])
+                'used' => $used,
+                'nused' => 100 - $used
             );
         }
         
@@ -309,7 +310,7 @@ class Servyy
      */
     public function getMemory($type)
     {
-        $memValue = $this->extractStr($this->data['memory'], "Mem:", "\n");
+        $memValue = $this->extractStr($this->data['memory'], "(Mem|Speicher):", "\n", 2);
         $memValue = preg_replace("/\s+/", "-", $memValue);
         $memArr = explode("-", $memValue);
         
@@ -327,7 +328,7 @@ class Servyy
      */
     public function getSwap($type)
     {
-        $swapValue = $this->extractStr($this->data['memory'], "Swap:", "\n");
+        $swapValue = $this->extractStr($this->data['memory'], "(Swap|Auslagerungsdatei):", "\n", 2);
         $swapValue = preg_replace("/\s+/", "-", $swapValue);
         $swapArr = explode("-", $swapValue);
         
@@ -345,7 +346,7 @@ class Servyy
      */
     public function getTasks($type)
     {
-        $tasksValue = $this->extractStr($this->data['top'], "Tasks:", "\n");
+        $tasksValue = $this->extractStr($this->data['top'], "(Tasks|Aufgaben):", "\n", 2);
         $tasksArr = explode(",", $tasksValue);
         
         foreach ($tasksArr as $str) {
@@ -497,13 +498,20 @@ class Servyy
      * @param string $string
      * @param string $start
      * @param string $end
+     * @param integer $match
      * @return string
      */
-    public function extractStr($string, $start, $end)
+    public function extractStr($string, $start, $end, $match = 1)
     {
         preg_match("/$start(.*?)$end/", $string, $matches);
         
-        return trim($matches[1]);
+        if (array_key_exists($match, $matches)) {
+            $result = trim($matches[$match]);
+        } else {
+            $result = null;
+        }
+        
+        return $result;
     }
     
     /**
@@ -518,6 +526,16 @@ class Servyy
         $base = log($bytes, 1024);
         
         return round(pow(1024, $base - floor($base)), $precision) . ' ' . $suffixes[floor($base)];
+    }
+    
+    /**
+     * Replace commas with points
+     * @param mixed $value
+     * @return mixed
+     */
+    public function rcp($value)
+    {
+        return str_replace(",", ".", $value);
     }
 }
 
@@ -617,11 +635,11 @@ $s->run($_GET);
                         <div class="inner">
                             <div id="mem-usage">
                                 <div id="mem-usage-chart"></div>
-                                <b>Memory:</b> <?=$s->formatBytes($s->getMemory('total'),0)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getMemory('used'),0)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getMemory('free'),0)?>
+                                <b>Memory:</b> <?=$s->formatBytes($s->getMemory('total'),1)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getMemory('used'),1)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getMemory('free'),1)?>
                             </div>
                             <div id="swap-usage">
                                 <div id="swap-usage-chart"></div>
-                                <b>Swap:</b> <?=$s->formatBytes($s->getSwap('total'),0)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getSwap('used'),0)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getSwap('free'),0)?>
+                                <b>Swap:</b> <?=$s->formatBytes($s->getSwap('total'),1)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getSwap('used'),1)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getSwap('free'),1)?>
                             </div>
                         </div>
                     </div>
