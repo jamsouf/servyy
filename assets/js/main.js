@@ -200,7 +200,7 @@ function chartMemUsage() {
         tooltip: {
             formatter: function() {
                 return this.series.name + '<br>' +
-                       this.point.name + ': <b>' + this.point.percentage.toFixed(0) + '%</b> ('+formatBytes(this.point.y,0)+')';
+                       this.point.name + ': <b>' + this.point.percentage.toFixed(0) + '%</b> ('+formatBytes(this.point.y,1)+')';
             }
         },
         series: [{
@@ -244,7 +244,7 @@ function chartSwapUsage() {
         tooltip: {
             formatter: function() {
                 return this.series.name + '<br>' +
-                       this.point.name + ': <b>' + this.point.percentage.toFixed(0) + '%</b> ('+formatBytes(this.point.y,0)+')';
+                       this.point.name + ': <b>' + this.point.percentage.toFixed(0) + '%</b> ('+formatBytes(this.point.y,1)+')';
             }
         },
         series: [{
@@ -344,9 +344,9 @@ function chartDiskUsage() {
         tooltip: {
             shared: true,
             formatter: function () {
-                var s = '<b>' + this.x + '</b><br><b>Size:</b> ' + formatBytes(this.points[0].total,0);
+                var s = '<b>' + this.x + '</b><br><b>Size:</b> ' + formatBytes(this.points[0].total,1);
                 $.each(this.points, function () {
-                    s += '<br><b>' + this.series.name + ':</b> ' + formatBytes(this.y,0);
+                    s += '<br><b>' + this.series.name + ':</b> ' + formatBytes(this.y,1);
                 });
                 return s;
             },
