@@ -14,8 +14,8 @@ function run() {
     chartCpuLoadUsing();
     chartMemUsage();
     chartSwapUsage();
-    chartDiskUsage();
     chartTasksCount();
+    chartDiskUsage();
 }
 
 /**
@@ -27,13 +27,30 @@ function initScrollbars() {
     });
 }
 
+/**
+ * Convert the byte value into better readable format
+ */
+function formatBytes(bytes, precision) {
+    precision = typeof precision !== 'undefined' ? precision : 2;
+    var suffixes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB'];
+    if (bytes === 0) return 0 + ' ' + suffixes[0];
+    var base = Math.log(bytes) / Math.log(1024);
+    
+    return Math.pow(1024, base - Math.floor(base)).toFixed(precision) + ' ' + suffixes[Math.floor(base)];
+}
+
+/**
+ * Convert the cpu load identifier into readable text
+ */
 function cpuUsingLabel(key) {
     var label;
     switch (key) {
-        case 'us': label = 'user processes'; break;
+        case 'us':
+        case 'be': label = 'user processes'; break;
         case 'sy': label = 'system processes'; break;
         case 'ni': label = 'processes priority upgraded'; break;
-        case 'id': label = 'not used (idle)'; break;
+        case 'id':
+        case 'un': label = 'not used (idle)'; break;
         case 'wa': label = 'waiting for I/O operations'; break;
         case 'hi': label = 'serving hardware interrupts'; break;
         case 'si': label = 'serving software interrupts'; break;
@@ -50,7 +67,7 @@ function chartCpuLoadAverage() {
     $('#cpu-load-average-chart').highcharts({
         chart: {
             backgroundColor: 'none',
-            spacing: [0,10,0,10]
+            spacing: [10,10,10,10]
         },
         title: {
             text: null,
@@ -84,7 +101,7 @@ function chartCpuLoadAverage() {
             }
         },
         series: [{
-            data: [4.06, 3.63, 3.46]
+            data: Data.cpuLoadAvg
         }],
         credits: {
             enabled: false
@@ -115,7 +132,7 @@ function chartCpuLoadUsing() {
             }
         },
         xAxis: {
-            categories: ['us', 'sy', 'ni', 'id', 'wa', 'hi', 'si', 'st'],
+            categories: Data.cpuLoadCategories,
             lineColor: 'transparent',
             minorTickLength: 0,
             tickLength: 0,
@@ -144,11 +161,11 @@ function chartCpuLoadUsing() {
         },
         series: [{
             name: 'not used',
-            data: [92.7, 88.5, 100, 20.1, 99, 100, 99.8, 100],
+            data: Data.cpuLoadNotUsed,
             color: '#343432'
         }, {
             name: 'used',
-            data: [7.3, 11.5, 0.0, 79.9, 1.0, 0.0, 0.2, 0.0],
+            data: Data.cpuLoadUsed,
             color: '#F2A31B'
         }],
         credits: {
@@ -183,15 +200,15 @@ function chartMemUsage() {
         tooltip: {
             formatter: function() {
                 return this.series.name + '<br>' +
-                       this.point.name + ': <b>' + this.point.percentage.toFixed(1) + '%</b> ('+this.point.y+'G)';
+                       this.point.name + ': <b>' + this.point.percentage.toFixed(0) + '%</b> ('+formatBytes(this.point.y,0)+')';
             }
         },
         series: [{
             type: 'pie',
             name: 'Memory',
             data: [
-                ['Used', 46],
-                ['Free', 12]
+                ['Used', Data.memoryUsed],
+                ['Free', Data.memoryFree]
             ]
         }],
         colors: ['#F89144', '#333333'],
@@ -215,90 +232,30 @@ function chartSwapUsage() {
         },
         plotOptions: {
             pie: {
+                allowPointSelect: true,
+                cursor: 'pointer',
                 dataLabels: {
                     enabled: false
                 },
-                borderColor: 'transparent',
+                showInLegend: false,
+                borderColor: 'transparent'
             }
         },
         tooltip: {
             formatter: function() {
                 return this.series.name + '<br>' +
-                       this.point.name + ': <b>' + this.point.percentage.toFixed(1) + '%</b> ('+this.point.y+'G)';
+                       this.point.name + ': <b>' + this.point.percentage.toFixed(0) + '%</b> ('+formatBytes(this.point.y,0)+')';
             }
         },
         series: [{
             type: 'pie',
             name: 'Swap',
             data: [
-                ['Used', 8.8],
-                ['Free', 26]
+                ['Used', Data.swapUsed],
+                ['Free', Data.swapFree]
             ]
         }],
         colors: ['#F89144', '#333333'],
-        credits: {
-            enabled: false
-        }
-    });
-}
-
-/**
- *Chart for the disk usage
- */
-function chartDiskUsage() {
-    $('#disk-usage-chart').highcharts({
-        chart: {
-            type: 'bar',
-            backgroundColor: 'none',
-            spacing: [0,0,0,0]
-        },
-        title: {
-            text: null
-        },
-        plotOptions: {
-            series: {
-                showInLegend: false
-            },
-            bar: {
-                borderWidth: 0,
-                stacking: 'percent',
-            }
-        },
-        xAxis: {
-            categories: ['/', '/dev', '/dev/shm', '/nix', '/proc/kcore'],
-            lineColor: 'transparent',
-            minorTickLength: 0,
-            tickLength: 0,
-        },
-        yAxis: {
-            title: {
-                text: null
-            },
-            gridLineWidth: 0,
-            minorGridLineWidth: 0,
-            labels: {
-                enabled: false
-            }
-        },
-        tooltip: {
-            shared: true,
-            formatter: function () {
-                var s = '<b>' + this.x + '</b><br><b>Size:</b> ' + this.points[0].total + 'G';
-                $.each(this.points, function () {
-                    s += '<br><b>' + this.series.name + ':</b> ' + this.y + 'G';
-                });
-                return s;
-            },
-        },
-        series: [{
-            name: 'Avail',
-            data: [1.5, 30, 0.064, 308, 30],
-            color: '#343432'
-        }, {
-            name: 'Used',
-            data: [0.038, 0, 0, 534, 0],
-            color: '#93C784'
-        }],
         credits: {
             enabled: false
         }
@@ -337,16 +294,72 @@ function chartTasksCount() {
         series: [{
             type: 'pie',
             name: 'Process',
-            data: [
-                ['apache2', 8],
-                ['mysqld', 2],
-                ['tmux', 2],
-                ['bash', 2],
-                ['micro-inetd', 1],
-                ['dropbear', 1]
-            ]
+            data: Data.tasksCount
         }],
         colors: ['#BBCC99', '#95A674', '#717F53', '#4D5936', '#3D4E1D', '#303D19'],
+        credits: {
+            enabled: false
+        }
+    });
+}
+
+/**
+ *Chart for the disk usage
+ */
+function chartDiskUsage() {
+    $('#disk-usage-chart').highcharts({
+        chart: {
+            type: 'bar',
+            backgroundColor: 'none',
+            spacing: [0,0,0,0]
+        },
+        title: {
+            text: null
+        },
+        plotOptions: {
+            series: {
+                showInLegend: false
+            },
+            bar: {
+                borderWidth: 0,
+                stacking: 'percent',
+            }
+        },
+        xAxis: {
+            categories: Data.diskCategories,
+            lineColor: 'transparent',
+            minorTickLength: 0,
+            tickLength: 0,
+        },
+        yAxis: {
+            title: {
+                text: null
+            },
+            gridLineWidth: 0,
+            minorGridLineWidth: 0,
+            labels: {
+                enabled: false
+            }
+        },
+        tooltip: {
+            shared: true,
+            formatter: function () {
+                var s = '<b>' + this.x + '</b><br><b>Size:</b> ' + formatBytes(this.points[0].total,0);
+                $.each(this.points, function () {
+                    s += '<br><b>' + this.series.name + ':</b> ' + formatBytes(this.y,0);
+                });
+                return s;
+            },
+        },
+        series: [{
+            name: 'Avail',
+            data: Data.diskAvail,
+            color: '#343432'
+        }, {
+            name: 'Used',
+            data: Data.diskUsed,
+            color: '#93C784'
+        }],
         credits: {
             enabled: false
         }

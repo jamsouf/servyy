@@ -195,44 +195,37 @@ div {
     height: 145px;
 }
 #tasks-total {
-    margin-right: 9%;
-}
-.tasks-total-box {
-    padding: 15px;
+    margin-top: 10px;
+    width: 97%;
     text-align: center;
 }
-#tasks-total .ident {
-    margin-top: 4px;
-    font-size: 12px;
-    font-weight: 700;
+#tasks-total table {
+    margin: 0 auto;
+    width: 100%;
 }
-#tasks-total .value, #tasks-total .value-top {
-    margin-top: 4px;
+#tasks-total .ident {
+    font-size: 12px;
+}
+#tasks-total .value {
     font-size: 22px;
     font-weight: 300;
 }
-#tasks-total .value-top {
-    font-size: 44px;
-}
 #tasks-count {
-    margin-right: 9%;
+    margin-top: 20px;
+    width: 97%;
     text-align: center;
     font-size: 12px;
 }
 #tasks-count-chart {
-    margin-top: 5px;
-    height: 120px;
+    height: 110px;
 }
 #tasks-count .ident {
-    display: block;
     margin-top: 10px;
     font-weight: 700;
 }
-#tasks-resources {
-    margin-right: 0px;
-}
 #tasks-resources table {
-    margin: 8px auto 0;
+    margin: 0 auto;
+    width: 100%;
     font-size: 12px;
 }
 #tasks-resources th {
