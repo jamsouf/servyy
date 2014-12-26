@@ -271,6 +271,7 @@ class Servyy
     public function getCpuLoad($type, $number = null)
     {
         $loadValue = $this->extractStr($this->data['top'], "Cpu\(s\):", "\n");
+        $loadValue = str_replace("%", " ", $loadValue);
         $loadArr = explode(", ", $loadValue);
         
         foreach ($loadArr as $str) {
@@ -438,9 +439,9 @@ class Servyy
             }
         }
         
-        $arr['categories'] = implode(",", $categories);
-        $arr['used'] = implode(",", $used);
-        $arr['avail'] = implode(",", $avail);
+        $arr['categories'] = is_array($categories) ? implode(",", $categories) : null;
+        $arr['used'] = is_array($used) ? implode(",", $used) : null;
+        $arr['avail'] = is_array($avail) ? implode(",", $avail) : null;
         
         return $arr[$type];
     }
