@@ -1,7 +1,5 @@
 <?php
 
-ini_set('display_errors', 1);
-
 /**
  * Servyy - single page server dashboard
  * @author Jamil Soufan
