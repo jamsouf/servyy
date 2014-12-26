@@ -136,13 +136,13 @@ class Servyy
     {
         switch ($type) {
             case 'ipv4':
-                $result = $this->extractStr($this->data['address'], "inet addr:", " ");
+                $result = $this->extractStr($this->data['address'], "(inet addr|inet Adresse):", " ", 2);
                 break;
             case 'ipv6':
-                $result = $this->extractStr($this->data['address'], "inet6 addr:", "\/");
+                $result = $this->extractStr($this->data['address'], "(inet6 addr|inet6-Adresse):", "\/", 2);
                 break;
             case 'mac':
-                $result = $this->extractStr($this->data['address'], "HWaddr ", " ");
+                $result = $this->extractStr($this->data['address'], "(HWaddr|Hardware Adresse)", "\n", 2);
                 break;
         }
         
