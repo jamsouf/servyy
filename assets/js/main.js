@@ -1,4 +1,10 @@
 /**
+ * Global variable to controle
+ * displaying hidden files or not 
+ */
+var showHiddenFiles = false;
+
+/**
  * Make things on page load
  */
 $(function () {
@@ -9,13 +15,47 @@ $(function () {
  * Start the app
  */
 function run() {
+    initNavi();
     initScrollbars();
+    initDashboard();
+    initBrowser();
+}
+
+/**
+ * Create the dashboard
+ */
+function initDashboard() {
     chartCpuLoadAverage();
     chartCpuLoadUsing();
     chartMemUsage();
     chartSwapUsage();
     chartTasksCount();
     chartDiskUsage();
+    $('#c-dashboard').show();
+}
+
+/**
+ * Create the browser
+ */
+function initBrowser() {
+    initBrowserList();
+    initFilterField();
+    initHiddenFilesLink();
+    $('#c-browser').hide();
+}
+
+/**
+ * Add the actions to the navi menu
+ */
+function initNavi() {
+    $('#navi-dashboard').click(function(){
+        $('#c-dashboard').show();
+        $('#c-browser').hide();
+    });
+    $('#navi-browser').click(function(){
+        $('#c-dashboard').hide();
+        $('#c-browser').show();
+    });
 }
 
 /**
@@ -24,6 +64,98 @@ function run() {
 function initScrollbars() {
     $(".box .wrap").mCustomScrollbar({
         scrollInertia: 400
+    });
+}
+
+/**
+ * Create the filterable browser list
+ */
+function initBrowserList() {
+    var options = {
+        valueNames: ['name','size','lastmod','owner'],
+        indexAsync: true
+    };
+    
+    var browserList = new List('browser-list', options);
+    
+    $("a.resource").click(function(){
+        loadBrowserList($(this).data('url'), $(this).data('file'));
+    });
+}
+
+/**
+ * Create listener for the filter field
+ */
+function initFilterField() {
+    var $filter = $("#filterField"),
+        value, path;
+        
+    $filter.keyup(function (e) {
+        value = $filter.val();
+        if (e.keyCode == 13 && value !== '' && value !== '.' && value !== '\\') {
+            if (value.indexOf('..') > -1) {
+                path = atob($(this).data('file'));
+                path = path.split('/');
+                path = path.filter(function(n){ return n !== '' });
+                path.pop();
+                path = (path.length === 0) ? '/' : '/' + path.join('/') + '/';
+            }
+            else if (value.charAt(0) == '/') {
+                path = value;
+            }
+            else {
+                path = atob($(this).data('file')) + value;
+            }
+            if (path.slice(-1) != '/') {
+                path = path + '/';
+            }
+            loadBrowserList($(this).data('url'), btoa(path));
+        }
+    });
+}
+
+/**
+ * Create listener for the show hidden files link
+ */
+function initHiddenFilesLink() {
+    $("a.hiddenfi").click(function(){
+        showHiddenFiles = !showHiddenFiles;
+        var $hiddenicon = $("#hiddenicon");
+        if (showHiddenFiles === true) {
+            $hiddenicon.removeClass("fa-toggle-off");
+            $hiddenicon.addClass("fa-toggle-on");
+        }
+        else {
+            $hiddenicon.removeClass("fa-toggle-on");
+            $hiddenicon.addClass("fa-toggle-off");
+        }
+        loadBrowserList($(this).data('url'), $(this).data('file'));
+    });
+}
+
+/**
+ * Make a ajax call to load the browser list
+ */
+function loadBrowserList(url, path) {
+    $.ajax({
+        url: url,
+        data: {
+            type: 'browser',
+            file: path,
+            showHiddenFiles: showHiddenFiles
+        },
+        type: 'GET',
+        dataType: 'json',
+        success: function(result) {
+            if (result['status'] == 'success') {
+                $("#filterField").val('');
+                $("#filterField").data('file', result['pathForDataAttr']);
+                $("a.hiddenfi").data('file', result['pathForDataAttr']);
+                $("#breadcrumb").html(result['breadcrumb']);
+                $("#listing tbody").html(result['list']);
+                initBrowserList();
+            }
+        }
     });
 }
 
