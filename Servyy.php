@@ -3,7 +3,7 @@
 /**
  * Servyy - single page server dashboard
  * @author Jamil Soufan
- * @version 1.1.0
+ * @version 1.x.x
  * @license MIT
  * @link https://github.com/jamsouf/servyy
  */
@@ -96,7 +96,7 @@ class Servyy
             case 'perl': $command = 'perl -v'; break;
             case 'python': $command = 'python --version'; break;
             case 'ruby': $command = 'ruby --version'; break;
-            case 'ls' : $command = 'ls -'.($data['showHiddenFiles']=='true'?'a':'').'FlQ --time-style long-iso '.$data['file']; break;
+            case 'ls' : $command = 'ls -'.($data['showHiddenFiles']=='true'?'a':'').'FlQ --time-style long-iso --group-directories-first '.$data['file']; break;
         }
         
         return $command;

@@ -1,6 +1,9 @@
 CHANGELOG
 ===================
 
+* 1.x.x (YYYY-MM-DD)
+ * Directories are listed first, then files
+
 * 1.1.0 (2015-01-05)
  * Directory browser implemented
 
