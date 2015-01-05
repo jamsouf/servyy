@@ -25,37 +25,56 @@ class Servyy
             $this->load('all');
         } elseif ($params['type'] == 'overview' && $params['action'] == 'refresh') {
             $this->load('refresh');
+        } elseif ($params['type'] == 'browser') {
+            $this->load('ls', $params);
         }
     }
     
     /**
      * Load all server data
      * @param string $scope
+     * @param array $data
      */
-    private function load($scope)
+    private function load($scope, $data = null)
     {
-        if ($scope == 'all') {
-            $this->data['os'] = $this->execute('os');
-            $this->data['hostname'] = $this->execute('hostname');
-            $this->data['address'] = $this->execute('address');
-            $this->data['architecture'] = $this->execute('architecture');
-            $this->data['cpuinfo'] = $this->execute('cpuinfo');
+        if ($scope == 'ls') {
+            $this->data['browserPath'] = base64_decode($data['file']);
+            $this->data['ls'] = $this->execute('ls', array(
+                'file' => $this->data['browserPath'],
+                'showHiddenFiles' => $data['showHiddenFiles'])
+            );
+            $result['list'] = $this->getFileList();
+            $result['status'] = (empty($result['list'])) ? 'error' : 'success';
+            $result['breadcrumb'] = ($result['status'] == 'success') ? $this->getBreadcrumb() : '';
+            $result['pathForDataAttr'] = ($result['status'] == 'success') ? $this->getPathForDataAttr() : '';
+            exit(json_encode($result));
+        } else {
+            if ($scope == 'all') {
+                $this->data['os'] = $this->execute('os');
+                $this->data['hostname'] = $this->execute('hostname');
+                $this->data['address'] = $this->execute('address');
+                $this->data['architecture'] = $this->execute('architecture');
+                $this->data['cpuinfo'] = $this->execute('cpuinfo');
+                $this->data['browserPath'] = '/';
+                $this->data['ls'] = $this->execute('ls', $this->data['browserPath']);
+            }
+            
+            $this->data['date'] = $this->execute('date');
+            $this->data['uptime'] = $this->execute('uptime');
+            $this->data['top'] = $this->execute('top');
+            $this->data['toptable'] = $this->createTopTable($this->data['top']);
+            $this->data['memory'] = $this->execute('memory');
+            $this->data['disk'] = $this->execute('disk');
         }
-        
-        $this->data['date'] = $this->execute('date');
-        $this->data['uptime'] = $this->execute('uptime');
-        $this->data['top'] = $this->execute('top');
-        $this->data['toptable'] = $this->createTopTable($this->data['top']);
-        $this->data['memory'] = $this->execute('memory');
-        $this->data['disk'] = $this->execute('disk');
     }
     
     /**
      * Get the console command
      * @param string $type
+     * @param array $data
      * @return string
      */
-    private function getCommand($type)
+    private function getCommand($type, $data = null)
     {
         switch ($type) {
             case 'date': $command = 'date +%a,%d.%m.%Y-%H:%M:%S,%Z'; break;
@@ -77,6 +96,7 @@ class Servyy
             case 'perl': $command = 'perl -v'; break;
             case 'python': $command = 'python --version'; break;
             case 'ruby': $command = 'ruby --version'; break;
+            case 'ls' : $command = 'ls -'.($data['showHiddenFiles']=='true'?'a':'').'FlQ --time-style long-iso '.$data['file']; break;
         }
         
         return $command;
@@ -85,11 +105,12 @@ class Servyy
     /**
      * Execute the console command for the given type
      * @param string $type
+     * @param array $data
      * @return string
      */
-    private function execute($type)
+    private function execute($type, $data = null)
     {
-        return shell_exec($this->getCommand($type));
+        return shell_exec($this->getCommand($type, $data));
     }
     
     /**
@@ -459,7 +480,7 @@ class Servyy
         
         switch ($type) {
             case 'linux':
-                $result = $output;
+                $result = trim($output);
                 break;
             case 'apache':
                 $result = $this->extractStr($output, "version:", "\n");
@@ -490,6 +511,87 @@ class Servyy
         if (empty($result)) $result = $na;
         
         return $result;
+    }
+    
+    /**
+     * Get the directory content
+     * @return string
+     */
+    public function getFileList()
+    {
+        $result = '';
+        
+        if (empty($this->data['ls'])) {
+            return '';
+        }
+        
+        $lines = explode("\n", trim($this->data['ls']));
+        
+        if ($this->data['browserPath'] != '/') {
+            $back = array_filter(explode("/", $this->data['browserPath']));
+            array_pop($back);
+            $back = (empty($back)) ? "/" : "/" . implode("/", $back) . "/";
+            $result .= '<tr>
+                         <td colspan="4"><a href="#" class="resource" data-url="'.$_SERVER['PHP_SELF'].'" data-file="'.base64_encode($back).'"><i class="fa fa-reply"></i></a></td>
+                       </tr>';
+        }
+        
+        foreach ($lines as $line) {
+            $name = str_replace('"', '', substr($line, strpos($line, '"')));
+            $line = preg_replace("/\s+/", "{-}", trim($line));
+            $arr = explode("{-}", $line);
+            if (count($arr) < 4 || $name == './' || $name == '../' || strpos($name, " -> ") !== false) continue;
+            
+            if (substr($name, strlen($name)-1) == '/') {
+                $result .= '<tr>
+                              <td><a href="#" class="resource" data-url="'.$_SERVER['PHP_SELF'].'" data-file="'.base64_encode($this->data['browserPath'].$name).'"><span class="name">'.$name.'</span></a></td>
+                              <td><span class="size">'.$this->formatBytes($arr[4]).'</span></td>
+                              <td><span class="lastmod">'.$arr[5].' '.$arr[6].'</span></td>
+                              <td><span class="owner">'.$arr[2].'/'.$arr[3].'</span></td>
+                            </tr>';
+            } else {
+                $result .= '<tr>
+                              <td><span class="name file">'.$name.'</span></td>
+                              <td><span class="size">'.$this->formatBytes($arr[4]).'</span></td>
+                              <td><span class="lastmod">'.$arr[5].' '.$arr[6].'</span></td>
+                              <td><span class="owner">'.$arr[2].'/'.$arr[3].'</span></td>
+                            </tr>';
+            }
+        }
+        
+        return $result;
+    }
+    
+    /**
+     * Get the breadcrumb
+     * @return string
+     */
+    public function getBreadcrumb()
+    {
+        $result = '';
+        $path = $this->data['browserPath'];
+        $paths = array_filter(explode("/", $path));
+        array_unshift($paths, "/");
+        $concatPaths = $paths;
+        
+        for ($i=0; $i<count($paths); $i++) {
+            $paths[$i] = ($i > 0) ? $paths[$i] . '/' : $paths[$i];
+            $concatPaths[$i] = ($i > 0) ? $concatPaths[$i-1] . $concatPaths[$i] . '/' : $concatPaths[$i];
+            $output[$i] = '<a href="#" class="resource" data-url="'.$_SERVER['PHP_SELF'].'" data-file="'.base64_encode($concatPaths[$i]).'">'.$paths[$i].'</a>';
+        }
+        
+        $result = implode(' <i class="fa fa-angle-right"></i> ', $output);
+        
+        return $result;
+    }
+    
+    /**
+     * Get the path to put it in the data-attr
+     * @return string
+     */
+    public function getPathForDataAttr()
+    {
+        return base64_encode($this->data['browserPath']);
     }
     
     /**
@@ -571,8 +673,9 @@ $s->run($_GET);
     <body>
         <div id="head">
             
-            <div class="logo">
-                <a href="https://github.com/jamsouf/servyy"><i class="fa fa-tasks"></i><br>Servyy</a>
+            <div class="center">
+                <a id="navi-dashboard" href="#"><i class="fa fa-th-large"></i> Dashboard</a> &nbsp; &nbsp;
+                <a id="navi-browser" href="#"><i class="fa fa-list"></i> Browser</a>
             </div>
             <div class="left">
                 <?=$s->getAddress('ipv4')?><br>
@@ -590,169 +693,218 @@ $s->run($_GET);
             
             <div id="content">
                 
-                <div class="box float wp33">
-                    <div class="wrap hf150">
-                        <div id="info-os" class="inner">
-                            <span class="head-title"><?=$s->getOperatingSystem()?></span>
-                            <span class="sub-title"><?=$s->getHostname()?></span>
-                            <div class="content">
-                                <span class="bold">IPv4 address:</span> <?=$s->getAddress('ipv4')?><br>
-                                <span class="bold">IPv6 address:</span> <?=$s->getAddress('ipv6')?><br>
-                                <span class="bold">MAC address:</span> <?=$s->getAddress('mac')?>
+                <div id="c-dashboard">
+                
+                    <div class="box float wp33">
+                        <div class="wrap hf150">
+                            <div id="info-os" class="inner">
+                                <span class="head-title"><?=$s->getOperatingSystem()?></span>
+                                <span class="sub-title"><?=$s->getHostname()?></span>
+                                <div class="content">
+                                    <span class="bold">IPv4 address:</span> <?=$s->getAddress('ipv4')?><br>
+                                    <span class="bold">IPv6 address:</span> <?=$s->getAddress('ipv6')?><br>
+                                    <span class="bold">MAC address:</span> <?=$s->getAddress('mac')?>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="box float wp33">
-                    <div class="wrap hf150">
-                        <div id="info-cpu" class="inner">
-                            <span class="head-title"><?=$s->getCpuName()?></span>
-                            <span class="sub-title"><?=$s->getNumberOfCpus()?> CPU(s), <?=$s->getBitSize()?>-bit, <?=$s->getCacheSize()?> cache</span>
-                            <span class="load-avg"><?=$s->getLoadAverage(1)?>, <?=$s->getLoadAverage(5)?>, <?=$s->getLoadAverage(15)?></span>
-                            <span class="up-since"> &nbsp; | &nbsp; up since <?=$s->getUpSince()?></span>
-                            <div id="cpu-load-average-chart"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="box float wp33 nmright">
-                    <div class="wrap hf150">
-                        <div class="inner">
-                            <div id="cpu-load-using-chart"></div>
-                            <div id="cpu-total-load">
-                                <span class="value"><?=$s->getCpuLoad('total')?>%</span><br>
-                                <span class="ident">cpu load</span>
-                            </div>
-                            <div class="clear"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="box float wp33">
-                    <div class="wrap hf235">
-                        <div class="inner">
-                            <div id="mem-usage">
-                                <div id="mem-usage-chart"></div>
-                                <b>Memory:</b> <?=$s->formatBytes($s->getMemory('total'),1)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getMemory('used'),1)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getMemory('free'),1)?>
-                            </div>
-                            <div id="swap-usage">
-                                <div id="swap-usage-chart"></div>
-                                <b>Swap:</b> <?=$s->formatBytes($s->getSwap('total'),1)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getSwap('used'),1)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getSwap('free'),1)?>
+                    
+                    <div class="box float wp33">
+                        <div class="wrap hf150">
+                            <div id="info-cpu" class="inner">
+                                <span class="head-title"><?=$s->getCpuName()?></span>
+                                <span class="sub-title"><?=$s->getNumberOfCpus()?> CPU(s), <?=$s->getBitSize()?>-bit, <?=$s->getCacheSize()?> cache</span>
+                                <span class="load-avg"><?=$s->getLoadAverage(1)?>, <?=$s->getLoadAverage(5)?>, <?=$s->getLoadAverage(15)?></span>
+                                <span class="up-since"> &nbsp; | &nbsp; up since <?=$s->getUpSince()?></span>
+                                <div id="cpu-load-average-chart"></div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="box float wp33 nmright">
+                        <div class="wrap hf150">
+                            <div class="inner">
+                                <div id="cpu-load-using-chart"></div>
+                                <div id="cpu-total-load">
+                                    <span class="value"><?=$s->getCpuLoad('total')?>%</span><br>
+                                    <span class="ident">cpu load</span>
+                                </div>
+                                <div class="clear"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="box float wp33">
+                        <div class="wrap hf235">
+                            <div class="inner">
+                                <div id="mem-usage">
+                                    <div id="mem-usage-chart"></div>
+                                    <b>Memory:</b> <?=$s->formatBytes($s->getMemory('total'),1)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getMemory('used'),1)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getMemory('free'),1)?>
+                                </div>
+                                <div id="swap-usage">
+                                    <div id="swap-usage-chart"></div>
+                                    <b>Swap:</b> <?=$s->formatBytes($s->getSwap('total'),1)?> &nbsp;&nbsp; <b>Used:</b> <?=$s->formatBytes($s->getSwap('used'),1)?> &nbsp;&nbsp; <b>Free:</b> <?=$s->formatBytes($s->getSwap('free'),1)?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="box float wp33">
+                        <div class="wrap hf235">
+                            <div class="inner">
+                                <div id="tasks-total">
+                                    <table>
+                                        <tr>
+                                            <td><span class="value"><?=$s->getTasks('total')?></span><br><span class="ident">Tasks</span></td>
+                                            <td><span class="value"><?=$s->getTasks('running')?></span><br><span class="ident">Running</span></td>
+                                            <td><span class="value"><?=$s->getTasks('sleeping')?></span><br><span class="ident">Sleeping</span></td>
+                                            <td><span class="value"><?=$s->getTasks('stopped')?></span><br><span class="ident">Stopped</span></td>
+                                            <td><span class="value"><?=$s->getTasks('zombie')?></span><br><span class="ident">Zombie</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <div id="tasks-count">
+                                    <div id="tasks-count-chart"></div>
+                                    <span class="ident">Number of process instances:</span><br>
+                                    <?=$s->getTopCountInstances('command',0)?> (<?=$s->getTopCountInstances('count',0)?>), 
+                                    <?=$s->getTopCountInstances('command',1)?> (<?=$s->getTopCountInstances('count',1)?>), 
+                                    <?=$s->getTopCountInstances('command',2)?> (<?=$s->getTopCountInstances('count',2)?>)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="box float wp33 nmright">
+                        <div class="wrap hf235">
+                            <div class="inner">
+                                <div id="tasks-resources">
+                                    <table>
+                                        <tr><th>%cpu</th><th>%mem</th><th>command</th></tr>
+                                        <tr><td><?=$s->getTop('cpu',0)?></td><td><?=$s->getTop('mem',0)?></td><td><?=$s->getTop('command',0)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',1)?></td><td><?=$s->getTop('mem',1)?></td><td><?=$s->getTop('command',1)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',2)?></td><td><?=$s->getTop('mem',2)?></td><td><?=$s->getTop('command',2)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',3)?></td><td><?=$s->getTop('mem',3)?></td><td><?=$s->getTop('command',3)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',4)?></td><td><?=$s->getTop('mem',4)?></td><td><?=$s->getTop('command',4)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',5)?></td><td><?=$s->getTop('mem',5)?></td><td><?=$s->getTop('command',5)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',6)?></td><td><?=$s->getTop('mem',6)?></td><td><?=$s->getTop('command',6)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',7)?></td><td><?=$s->getTop('mem',7)?></td><td><?=$s->getTop('command',7)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',8)?></td><td><?=$s->getTop('mem',8)?></td><td><?=$s->getTop('command',8)?></td></tr>
+                                        <tr><td><?=$s->getTop('cpu',9)?></td><td><?=$s->getTop('mem',9)?></td><td><?=$s->getTop('command',9)?></td></tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="box float wp50">
+                        <div class="wrap hf150">
+                            <div class="inner">
+                                <div id="disk-usage-chart"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="box float wp50 nmright">
+                        <div class="wrap hf150">
+                            <div class="inner">
+                                <div class="package">
+                                    <div class="ident">Linux</div>
+                                    <div class="value"><?=$s->getVersion('linux')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">Apache</div>
+                                    <div class="value"><?=$s->getVersion('apache')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">nginx</div>
+                                    <div class="value"><?=$s->getVersion('nginx')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">MySQL</div>
+                                    <div class="value"><?=$s->getVersion('mysql')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">Java</div>
+                                    <div class="value"><?=$s->getVersion('java')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">PHP</div>
+                                    <div class="value"><?=$s->getVersion('php')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">Perl</div>
+                                    <div class="value"><?=$s->getVersion('perl')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">Python</div>
+                                    <div class="value"><?=$s->getVersion('python')?></div>
+                                </div>
+                                <div class="package">
+                                    <div class="ident">Ruby</div>
+                                    <div class="value"><?=$s->getVersion('ruby')?></div>
+                                </div>
+                                <div class="clear"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="clear"></div>
+                    
                 </div>
                 
-                <div class="box float wp33">
-                    <div class="wrap hf235">
-                        <div class="inner">
-                            <div id="tasks-total">
-                                <table>
+                <div id="c-browser">
+                    
+                    <div id="browser-list" class="box wp100 nmright">
+                        
+                        <div id="navigate">
+                            <div class="inner">
+                                <div class="float wp66">
+                                    <i class="fa fa-filter"></i> <input id="filterField" class="search" placeholder="Filter or navigate" data-url="<?=$_SERVER['PHP_SELF']?>" data-file="<?=$s->getPathForDataAttr()?>" />
+                                </div>
+                                <div class="floatr actions">
+                                    <a href="#" class="hiddenfi" data-url="<?=$_SERVER['PHP_SELF']?>" data-file="<?=$s->getPathForDataAttr()?>"><i id="hiddenicon" class="fa fa-toggle-off"></i>Show hidden files</a>
+                                </div>
+                                <div class="clear"></div>
+                            </div>
+                        </div>
+                        
+                        <div id="breadcrumb">
+                            <?=$s->getBreadcrumb()?>
+                        </div>
+                        
+                        <div id="listing" class="wrap">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td><span class="value"><?=$s->getTasks('total')?></span><br><span class="ident">Tasks</span></td>
-                                        <td><span class="value"><?=$s->getTasks('running')?></span><br><span class="ident">Running</span></td>
-                                        <td><span class="value"><?=$s->getTasks('sleeping')?></span><br><span class="ident">Sleeping</span></td>
-                                        <td><span class="value"><?=$s->getTasks('stopped')?></span><br><span class="ident">Stopped</span></td>
-                                        <td><span class="value"><?=$s->getTasks('zombie')?></span><br><span class="ident">Zombie</span></td>
+                                        <td><a href="#" class="sort" data-sort="name"><i class="fa fa-sort"></i>Name</a></td>
+                                        <td><a href="#" class="sort" data-sort="size"><i class="fa fa-sort"></i>Size</a></td>
+                                        <td><a href="#" class="sort" data-sort="lastmod"><i class="fa fa-sort"></i>Last modification</a></td>
+                                        <td><a href="#" class="sort" data-sort="owner"><i class="fa fa-sort"></i>Owner</a></td>
                                     </tr>
-                                </table>
-                            </div>
-                            
-                            <div id="tasks-count">
-                                <div id="tasks-count-chart"></div>
-                                <span class="ident">Number of process instances:</span><br>
-                                <?=$s->getTopCountInstances('command',0)?> (<?=$s->getTopCountInstances('count',0)?>), 
-                                <?=$s->getTopCountInstances('command',1)?> (<?=$s->getTopCountInstances('count',1)?>), 
-                                <?=$s->getTopCountInstances('command',2)?> (<?=$s->getTopCountInstances('count',2)?>)
-                            </div>
+                                </thead>
+                                <tbody class="list">
+                                    <?=$s->getFileList()?>
+                                </tbody>
+                            </table>
                         </div>
+                        
                     </div>
+                    
                 </div>
-                
-                <div class="box float wp33 nmright">
-                    <div class="wrap hf235">
-                        <div class="inner">
-                            <div id="tasks-resources">
-                                <table>
-                                    <tr><th>%cpu</th><th>%mem</th><th>command</th></tr>
-                                    <tr><td><?=$s->getTop('cpu',0)?></td><td><?=$s->getTop('mem',0)?></td><td><?=$s->getTop('command',0)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',1)?></td><td><?=$s->getTop('mem',1)?></td><td><?=$s->getTop('command',1)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',2)?></td><td><?=$s->getTop('mem',2)?></td><td><?=$s->getTop('command',2)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',3)?></td><td><?=$s->getTop('mem',3)?></td><td><?=$s->getTop('command',3)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',4)?></td><td><?=$s->getTop('mem',4)?></td><td><?=$s->getTop('command',4)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',5)?></td><td><?=$s->getTop('mem',5)?></td><td><?=$s->getTop('command',5)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',6)?></td><td><?=$s->getTop('mem',6)?></td><td><?=$s->getTop('command',6)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',7)?></td><td><?=$s->getTop('mem',7)?></td><td><?=$s->getTop('command',7)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',8)?></td><td><?=$s->getTop('mem',8)?></td><td><?=$s->getTop('command',8)?></td></tr>
-                                    <tr><td><?=$s->getTop('cpu',9)?></td><td><?=$s->getTop('mem',9)?></td><td><?=$s->getTop('command',9)?></td></tr>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="box float wp50">
-                    <div class="wrap hf150">
-                        <div class="inner">
-                            <div id="disk-usage-chart"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="box float wp50 nmright">
-                    <div class="wrap hf150">
-                        <div class="inner">
-                            <div class="package">
-                                <div class="ident">Linux</div>
-                                <div class="value"><?=$s->getVersion('linux')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">Apache</div>
-                                <div class="value"><?=$s->getVersion('apache')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">nginx</div>
-                                <div class="value"><?=$s->getVersion('nginx')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">MySQL</div>
-                                <div class="value"><?=$s->getVersion('mysql')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">Java</div>
-                                <div class="value"><?=$s->getVersion('java')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">PHP</div>
-                                <div class="value"><?=$s->getVersion('php')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">Perl</div>
-                                <div class="value"><?=$s->getVersion('perl')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">Python</div>
-                                <div class="value"><?=$s->getVersion('python')?></div>
-                            </div>
-                            <div class="package">
-                                <div class="ident">Ruby</div>
-                                <div class="value"><?=$s->getVersion('ruby')?></div>
-                            </div>
-                            <div class="clear"></div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="clear"></div>
                 
             </div>
             
         </div>
         
+        <div id="footer">
+            <div class="center"><a href="https://github.com/jamsouf/servyy"><i class="fa fa-github"></i> Servyy</a></div>
+        </div>
+        
         <script src="https://jamsouf.github.io/servyy/assets/js/jquery-2.1.1.min.js"></script>
         <script src="https://jamsouf.github.io/servyy/assets/js/jquery.mCustomScrollbar.concat.min.js"></script>
         <script src="https://jamsouf.github.io/servyy/assets/js/highcharts-4.0.4.js"></script>
+        <script src="https://jamsouf.github.io/servyy/assets/js/list.min.js"></script>
         <script src="https://jamsouf.github.io/servyy/assets/js/main.js"></script>
     </body>
 </html>
