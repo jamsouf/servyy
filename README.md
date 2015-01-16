@@ -60,3 +60,19 @@ Number of the tasks and the most commonly used processes.
 <b>Processes</b><br>
 CPU and memory usage of the top processes.
 </p>
+
+--
+
+<p align="center">
+<img src="https://jamsouf.github.io/servyy/assets/img/readme-browser.png"><br>
+<b>Browser</b><br>
+Directory and file browser.
+</p>
+
+--
+
+<p align="center">
+<img src="https://jamsouf.github.io/servyy/assets/img/readme-navigate.png"><br>
+<b>Navigate</b><br>
+Filter or navigate through the filesystem.
+</p>
