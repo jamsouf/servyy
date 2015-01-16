@@ -1,6 +1,6 @@
 Servyy - Single page server dashboard
 ======
-Servyy is a small single page server dashboard. It gives you a very short and fundamental overview about your server. You just need to upload one file, the Servyy.php to your server. If everything goes fine, it gives you in your browser some load and usage data from your machine in a nice way.
+Servyy is a small single page server dashboard and browser. It gives you a very short and fundamental overview about your server. You just need to upload one file, the Servyy.php to your server. If everything goes fine, it gives you in your browser some load and usage data from your machine in a nice way. With the browser you can navigate through your filesystem.
 
 Requirements
 -----
