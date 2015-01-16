@@ -14,7 +14,8 @@ Usage
 Just upload Servyy.php (only one file) to your server and open it in your browser:  
 `wget https://raw.githubusercontent.com/jamsouf/servyy/master/Servyy.php`
 
---
+Dashboard
+-----
 
 <p align="center">
 <img src="https://jamsouf.github.io/servyy/assets/img/readme-overview.png"><br>
@@ -61,7 +62,8 @@ Number of the tasks and the most commonly used processes.
 CPU and memory usage of the top processes.
 </p>
 
---
+Browser
+-----
 
 <p align="center">
 <img src="https://jamsouf.github.io/servyy/assets/img/readme-browser.png"><br>
