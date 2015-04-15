@@ -42,6 +42,7 @@ function initBrowser() {
     initFilterField();
     initHiddenFilesLink();
     $('#c-browser').hide();
+    $('#file-close').click(function(){$('#c-file').hide();});
 }
 
 /**
@@ -51,6 +52,7 @@ function initNavi() {
     $('#navi-dashboard').click(function(){
         $('#c-dashboard').show();
         $('#c-browser').hide();
+        $('#c-file').hide();
     });
     $('#navi-browser').click(function(){
         $('#c-dashboard').hide();
@@ -64,6 +66,13 @@ function initNavi() {
 function initScrollbars() {
     $(".box .wrap").mCustomScrollbar({
         scrollInertia: 400
+    });
+    $("#file-content-wrap").mCustomScrollbar({
+        scrollInertia: 400,
+        axis: "x",
+        advanced: {
+            autoExpandHorizontalScroll: true
+        }
     });
 }
 
@@ -80,6 +89,10 @@ function initBrowserList() {
     
     $("a.resource").click(function(){
         loadBrowserList($(this).data('url'), $(this).data('file'));
+    });
+    
+    $("a.file").click(function(){
+        loadFileContent($(this).data('url'), $(this).data('file'));
     });
 }
 
@@ -153,7 +166,41 @@ function loadBrowserList(url, path) {
                 $("a.hiddenfi").data('file', result['pathForDataAttr']);
                 $("#breadcrumb").html(result['breadcrumb']);
                 $("#listing tbody").html(result['list']);
+                $('#c-file').hide();
                 initBrowserList();
+            }
+        }
+    });
+}
+
+/**
+ * Make a ajax call to load the file content
+ */
+function loadFileContent(url, path) {
+    $.ajax({
+        url: url,
+        data: {
+            type: 'file',
+            file: path
+        },
+        type: 'GET',
+        dataType: 'json',
+        success: function(result) {
+            if (result['status'] == 'success') {
+                $("#file-content").removeClass();
+                var language = getLanguageFromExtension(result['fileExtension']);
+                if (language != null) {
+                    $("#file-content").addClass(language);
+                }
+                
+                $("#file-name").text(result['fileName']);
+                $("#file-loc").text(result['fileLoc']);
+                $("#file-path").text(result['filePath']);
+                $("#file-content").text(result['fileContent']);
+                $("#c-file").show();
+                $("#file-content").each(function(i, block) {
+                    hljs.highlightBlock(block);
+                });
             }
         }
     });
@@ -190,6 +237,37 @@ function cpuUsingLabel(key) {
         default: label = key;
     }
     return label;
+}
+
+/**
+ * Get the code language from the file extension
+ */
+function getLanguageFromExtension(ext) {
+    var map = {
+        cpp: ['cpp'],
+        css: ['css'],
+        html: ['html'],
+        ini: ['ini'],
+        java: ['java'],
+        javascript: ['js'],
+        json: ['json'],
+        markdown: ['md', 'mdown', 'markdown', 'mdtext'],
+        perl: ['pl'],
+        php: ['php', 'php5'],
+        python: ['py'],
+        ruby: ['rb'],
+        sql: ['sql'],
+        xml: ['xml']
+    };
+    
+    for (var language in map) {
+        var index = $.inArray(ext, map[language]);
+        if (index != -1) {
+            return language;
+        }
+    }
+    
+    return null;
 }
 
 /**

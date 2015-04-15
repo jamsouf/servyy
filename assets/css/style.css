@@ -1,4 +1,5 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:300,400,700,900);
+@import url(https://fonts.googleapis.com/css?family=Inconsolata:400,700);
 
 body {
     background: url('https://jamsouf.github.io/servyy/assets/img/bg.gif');
@@ -370,4 +371,47 @@ div {
 }
 #listing tbody .file {
     color: #A6A6A6;
+}
+#c-file {
+    display: none;
+}
+#c-file .box {
+    background: rgba(35, 35, 35, 1);
+}
+#c-file .inner {
+    padding: 0 15px 7px;
+}
+#file-location {
+    padding: 10px 0;
+    border-bottom: 1px dotted #444;
+}
+#file-name {
+    display: inline-block;
+    color: #F9B032;
+    font-weight: 700;
+}
+#file-loc {
+    display: inline-block;
+    margin-left: 10px;
+    color: #7B7B77;
+}
+#file-path {
+    display: inline-block;
+    margin-left: 10px;
+    color: #7B7B77;
+}
+#file-close {
+    float: right;
+    color: #7B7B77;
+}
+#file-close:hover {
+    color: #FFFFFF;
+}
+#file-content-wrap {
+    overflow-y: auto;
+}
+#file-content {
+    padding: 10px 0 5px;
+    white-space: pre;
+    font: 400 14px/16px 'Inconsolata', Monospace;
 }
