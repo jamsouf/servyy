@@ -23,10 +23,15 @@ class Servyy
     {
         if (empty($params)) {
             $this->load('all');
-        } elseif ($params['type'] == 'overview' && $params['action'] == 'refresh') {
+        }
+        elseif ($params['type'] == 'overview' && $params['action'] == 'refresh') {
             $this->load('refresh');
-        } elseif ($params['type'] == 'browser') {
+        }
+        elseif ($params['type'] == 'browser') {
             $this->load('ls', $params);
+        }
+        elseif ($params['type'] == 'file') {
+            $this->load('cat', $params);
         }
     }
     
@@ -48,7 +53,23 @@ class Servyy
             $result['breadcrumb'] = ($result['status'] == 'success') ? $this->getBreadcrumb() : '';
             $result['pathForDataAttr'] = ($result['status'] == 'success') ? $this->getPathForDataAttr() : '';
             exit(json_encode($result));
-        } else {
+        }
+        
+        elseif ($scope == 'cat') {
+            $this->data['file'] = base64_decode($data['file']);
+            $this->data['cat'] = $this->execute('cat', array(
+                'file' => $this->data['file']
+            ));
+            $result['fileName'] = $this->getFileName($this->data['file']);
+            $result['fileExtension'] = $this->getFileExtension($this->data['file']);
+            $result['fileLoc'] = $this->getFileLoc($this->data['cat']);
+            $result['filePath'] = $this->getFilePath($this->data['file']);
+            $result['fileContent'] = $this->data['cat'];
+            $result['status'] = (empty($result['fileContent'])) ? 'error' : 'success';
+            exit(json_encode($result));
+        }
+        
+        else {
             if ($scope == 'all') {
                 $this->data['os'] = $this->execute('os');
                 $this->data['hostname'] = $this->execute('hostname');
@@ -96,7 +117,8 @@ class Servyy
             case 'perl': $command = 'perl -v'; break;
             case 'python': $command = 'python --version'; break;
             case 'ruby': $command = 'ruby --version'; break;
-            case 'ls' : $command = 'ls -'.($data['showHiddenFiles']=='true'?'a':'').'FlQ --time-style long-iso --group-directories-first '.$data['file']; break;
+            case 'ls': $command = 'ls -'.($data['showHiddenFiles']=='true'?'a':'').'FlQ --time-style long-iso --group-directories-first '.$data['file']; break;
+            case 'cat': $command = 'cat '.$data['file']; break;
         }
         
         return $command;
@@ -551,7 +573,7 @@ class Servyy
                             </tr>';
             } else {
                 $result .= '<tr>
-                              <td><span class="name file">'.$name.'</span></td>
+                              <td><a href="#" class="file" data-url="'.$_SERVER['PHP_SELF'].'" data-file="'.base64_encode($this->data['browserPath'].$name).'"><span class="name">'.$name.'</span></a></td>
                               <td><span class="size">'.$this->formatBytes($arr[4]).'</span></td>
                               <td><span class="lastmod">'.$arr[5].' '.$arr[6].'</span></td>
                               <td><span class="owner">'.$arr[2].'/'.$arr[3].'</span></td>
@@ -616,12 +638,62 @@ class Servyy
     }
     
     /**
+     * Get the filename from the resource
+     * @param string $resource
+     * @return string
+     */
+    public function getFileName($resource)
+    {
+        $pathParts = pathinfo($resource);
+        
+        return $pathParts['basename'];
+    }
+    
+    /**
+     * Get the extension from the resource
+     * @param string $resource
+     * @return string
+     */
+    public function getFileExtension($resource)
+    {
+        $pathParts = pathinfo($resource);
+        
+        return $pathParts['extension'];
+    }
+    
+    /**
+     * Get loc from the content
+     * @param string $content
+     * @return string
+     */
+    public function getFileLoc($content)
+    {
+        $loc = substr_count($content, "\n") + 1;
+        $loc = $loc === 1 ? $loc.' line' : $loc.' lines';
+        
+        return "($loc)";
+    }
+    
+    /**
+     * Get the path from the resource
+     * @param string $resource
+     * @return string
+     */
+    public function getFilePath($resource)
+    {
+        $pathParts = pathinfo($resource);
+        
+        return $pathParts['dirname'] . '/';
+    }
+    
+    /**
      * Get human readable representation
      * @param float $bytes
      * @param integer $precision
      * @return string
      */
-    public function formatBytes($bytes, $precision = 2) {
+    public function formatBytes($bytes, $precision = 2)
+    {
         $suffixes = array('Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB');
         if ($bytes == 0) return 0 . ' ' . $suffixes[0];
         $base = log($bytes, 1024);
@@ -651,8 +723,9 @@ $s->run($_GET);
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-        <link href="https://jamsouf.github.io/servyy/assets/css/jquery.mCustomScrollbar.min.css" rel="stylesheet">
-        <link href="https://jamsouf.github.io/servyy/assets/css/style.css" rel="stylesheet">
+        <link href="//jamsouf.github.io/servyy/assets/css/jquery.mCustomScrollbar.min.css" rel="stylesheet">
+        <link href="//jamsouf.github.io/servyy/assets/css/railscasts.css" rel="stylesheet">
+        <link href="//jamsouf.github.io/servyy/assets/css/style.css" rel="stylesheet">
         <script type="text/javascript">
             var Data = {
                 cpuLoadAvg: [<?=$s->getLoadAverage(1)?>, <?=$s->getLoadAverage(5)?>, <?=$s->getLoadAverage(15)?>],
@@ -893,6 +966,24 @@ $s->run($_GET);
                     
                 </div>
                 
+                <div id="c-file">
+                    
+                    <div class="box wp100 nmright">
+                        <div class="inner">
+                            <div id="file-location">
+                                <div id="file-name"></div>
+                                <div id="file-loc"></div>
+                                <div id="file-path"></div>
+                                <a id="file-close" href="#"><i class="fa fa-close"></i></a><div class="clear"></div>
+                            </div>
+                            <div id="file-content-wrap">
+                                <div id="file-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                </div>
+                
             </div>
             
         </div>
@@ -901,10 +992,11 @@ $s->run($_GET);
             <div class="center"><a href="https://github.com/jamsouf/servyy"><i class="fa fa-github"></i> Servyy</a></div>
         </div>
         
-        <script src="https://jamsouf.github.io/servyy/assets/js/jquery-2.1.1.min.js"></script>
-        <script src="https://jamsouf.github.io/servyy/assets/js/jquery.mCustomScrollbar.concat.min.js"></script>
-        <script src="https://jamsouf.github.io/servyy/assets/js/highcharts-4.0.4.js"></script>
-        <script src="https://jamsouf.github.io/servyy/assets/js/list.min.js"></script>
-        <script src="https://jamsouf.github.io/servyy/assets/js/main.js"></script>
+        <script src="//jamsouf.github.io/servyy/assets/js/jquery-2.1.1.min.js"></script>
+        <script src="//jamsouf.github.io/servyy/assets/js/jquery.mCustomScrollbar.concat.min.js"></script>
+        <script src="//jamsouf.github.io/servyy/assets/js/highcharts-4.0.4.js"></script>
+        <script src="//jamsouf.github.io/servyy/assets/js/list.min.js"></script>
+        <script src="//jamsouf.github.io/servyy/assets/js/highlight.pack.js"></script>
+        <script src="//jamsouf.github.io/servyy/assets/js/main.js"></script>
     </body>
 </html>
