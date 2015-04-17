@@ -65,7 +65,7 @@ class Servyy
             $result['fileLoc'] = $this->getFileLoc($this->data['cat']);
             $result['filePath'] = $this->getFilePath($this->data['file']);
             $result['fileContent'] = $this->data['cat'];
-            $result['status'] = (empty($result['fileContent'])) ? 'error' : 'success';
+            $result['status'] = 'success';
             exit(json_encode($result));
         }
         
@@ -573,7 +573,7 @@ class Servyy
                             </tr>';
             } else {
                 $result .= '<tr>
-                              <td><a href="#" class="file" data-url="'.$_SERVER['PHP_SELF'].'" data-file="'.base64_encode($this->data['browserPath'].$name).'"><span class="name">'.$name.'</span></a></td>
+                              <td><a href="#" class="file" data-url="'.$_SERVER['PHP_SELF'].'" data-file="'.base64_encode($this->makeFileNameSafe($this->data['browserPath'].$name)).'"><span class="name">'.$name.'</span></a></td>
                               <td><span class="size">'.$this->formatBytes($arr[4]).'</span></td>
                               <td><span class="lastmod">'.$arr[5].' '.$arr[6].'</span></td>
                               <td><span class="owner">'.$arr[2].'/'.$arr[3].'</span></td>
@@ -647,6 +647,16 @@ class Servyy
         $pathParts = pathinfo($resource);
         
         return $pathParts['basename'];
+    }
+    
+    /**
+     * Make a filename safe for executing with cat or similar
+     * @param string $fileName
+     * @return string
+     */
+    public function makeFileNameSafe($fileName)
+    {
+        return rtrim($fileName, '*');
     }
     
     /**
