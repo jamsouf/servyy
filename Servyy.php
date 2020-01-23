@@ -117,7 +117,7 @@ class Servyy
             case 'perl': $command = 'perl -v'; break;
             case 'python': $command = 'python --version'; break;
             case 'ruby': $command = 'ruby --version'; break;
-            case 'ls': $command = 'ls -'.($data['showHiddenFiles']=='true'?'a':'').'FlQ --time-style long-iso --group-directories-first '.$data['file']; break;
+            case 'ls': $command = 'ls -'.(($data['showHiddenFiles']??null)=='true'?'a':'').'FlQ --time-style long-iso --group-directories-first '.($data['file']??null); break;
             case 'cat': $command = 'cat '.$data['file']; break;
         }
         
